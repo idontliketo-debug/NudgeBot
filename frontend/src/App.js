@@ -10,21 +10,60 @@ function generateSessionId() {
   return 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
 }
 
+// ── AVATARS ───────────────────────────────────────────────────────────────────
+// A friendly, non-gendered "garden" set. One avatar is chosen per session (see
+// App) and stays consistent for every user message in that conversation; a new
+// one is selected on Reset. `rgb` drives each avatar's themed chip gradient/glow.
+const AVATARS = [
+  { emoji: '🥑', rgb: '124,179,66' },
+  { emoji: '🍅', rgb: '239,83,80' },
+  { emoji: '🥕', rgb: '255,152,0' },
+  { emoji: '🍆', rgb: '171,71,188' },
+  { emoji: '🌶️', rgb: '244,81,30' },
+  { emoji: '🥦', rgb: '102,187,106' },
+  { emoji: '🍄', rgb: '236,64,122' },
+  { emoji: '🌽', rgb: '253,216,53' },
+  { emoji: '🫐', rgb: '92,107,192' },
+  { emoji: '🥝', rgb: '156,204,101' },
+];
+
+// Pick a random avatar index, optionally avoiding an immediate repeat.
+function pickAvatar(exclude) {
+  if (AVATARS.length <= 1) return 0;
+  let i = Math.floor(Math.random() * AVATARS.length);
+  while (exclude != null && i === exclude) {
+    i = Math.floor(Math.random() * AVATARS.length);
+  }
+  return i;
+}
+
+// Build the themed chip styling for a user avatar from its rgb triplet.
+function userAvatarStyle(rgb) {
+  return {
+    background: `linear-gradient(135deg, rgba(${rgb}, 0.24), rgba(${rgb}, 0.06))`,
+    borderColor: `rgba(${rgb}, 0.42)`,
+    boxShadow: `0 4px 14px rgba(${rgb}, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08)`,
+  };
+}
+
 // ── HEADER ────────────────────────────────────────────────────────────────────
 function Header({ onNewChat, messageCount }) {
   return (
     <header className="app-header">
       <div className="header-inner">
         <div className="brand">
-          <span className="brand-icon">⚡</span>
+          <span className="brand-icon" aria-hidden="true">⚡</span>
           <span className="brand-name">NudgeBot</span>
           <span className="brand-tag">YOUR NLP UNDERSTANDING GUIDE</span>
         </div>
         <div className="header-actions">
           {messageCount > 0 && (
-            <span className="turn-counter">{Math.floor(messageCount / 2)} turns</span>
+            <span className="turn-counter">
+              <i className="bi bi-chat-square-dots"></i>
+              {Math.floor(messageCount / 2)} turns
+            </span>
           )}
-          <button className="btn-new-chat" onClick={onNewChat} title="New Chat">
+          <button className="btn-new-chat" onClick={onNewChat} title="New Chat" aria-label="Start a new chat">
             <i className="bi bi-arrow-counterclockwise"></i>
             <span>Reset</span>
           </button>
@@ -60,21 +99,26 @@ function AnalysisBadges({ analysis }) {
 }
 
 // ── CHAT MESSAGE ──────────────────────────────────────────────────────────────
-function ChatMessage({ message, index }) {
+function ChatMessage({ message, index, avatar }) {
   const isUser = message.role === 'user';
+  const av = avatar || AVATARS[0];
 
   return (
     <div className={`msg-row ${isUser ? 'msg-user' : 'msg-bot'}`} style={{ animationDelay: `${index * 0.05}s` }}>
       {!isUser && (
-        <div className="avatar avatar-bot">⚡</div>
+        <div className="avatar avatar-bot" role="img" aria-label="NudgeBot">⚡</div>
       )}
       <div className={`msg-bubble ${isUser ? 'bubble-user' : 'bubble-bot'}`}>
         {isUser ? (
           <>
-            <div className="msg-label">Question</div>
-            <div className="msg-text">{message.question}</div>
-            <div className="msg-label" style={{ marginTop: '0.5rem' }}>My Understanding</div>
-            <div className="msg-text">{message.understanding}</div>
+            <div className="msg-block">
+              <div className="msg-label">Question</div>
+              <div className="msg-text">{message.question}</div>
+            </div>
+            <div className="msg-block">
+              <div className="msg-label">My Understanding</div>
+              <div className="msg-text msg-text-soft">{message.understanding}</div>
+            </div>
           </>
         ) : (
           <>
@@ -84,8 +128,8 @@ function ChatMessage({ message, index }) {
         )}
       </div>
       {isUser && (
-        <div className="avatar avatar-user">
-          <i className="bi bi-person-fill"></i>
+        <div className="avatar avatar-user" style={userAvatarStyle(av.rgb)} role="img" aria-label="Your avatar">
+          <span className="avatar-emoji">{av.emoji}</span>
         </div>
       )}
     </div>
@@ -96,7 +140,7 @@ function ChatMessage({ message, index }) {
 function LoadingIndicator() {
   return (
     <div className="msg-row msg-bot">
-      <div className="avatar avatar-bot">⚡</div>
+      <div className="avatar avatar-bot" role="img" aria-label="NudgeBot">⚡</div>
       <div className="msg-bubble bubble-bot loading-bubble">
         <div className="typing-dots">
           <span></span><span></span><span></span>
@@ -152,6 +196,7 @@ function InputForm({ onSubmit, isLoading }) {
         <button
           type="submit"
           className="btn-submit"
+          aria-label="Send"
           disabled={isLoading || !question.trim() || !understanding.trim()}
         >
           {isLoading ? (
@@ -191,7 +236,10 @@ function SuggestedTopics({ onSelect }) {
           onClick={() => onSelect(topic.question, topic.understanding)}
           style={{ animationDelay: `${i * 0.08}s` }}
         >
-          <span className="topic-q">{topic.question}</span>
+          <span className="topic-q-row">
+            <span className="topic-q">{topic.question}</span>
+            <span className="topic-arrow" aria-hidden="true"><i className="bi bi-arrow-right"></i></span>
+          </span>
           <span className="topic-u">{topic.understanding}</span>
         </button>
       ))}
@@ -204,8 +252,11 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState(generateSessionId);
+  const [avatarIndex, setAvatarIndex] = useState(() => pickAvatar());
   const [backendStatus, setBackendStatus] = useState('checking');
   const chatEndRef = useRef(null);
+
+  const avatar = AVATARS[avatarIndex];
 
   // Check backend health on mount
   useEffect(() => {
@@ -230,6 +281,7 @@ function App() {
     } catch (e) { /* ignore */ }
     setMessages([]);
     setSessionId(generateSessionId());
+    setAvatarIndex(prev => pickAvatar(prev)); // fresh avatar each new conversation
   }, [sessionId]);
 
   const handleSubmit = async (question, understanding) => {
@@ -268,10 +320,11 @@ function App() {
 
       {/* Status bar */}
       {backendStatus !== 'connected' && (
-        <div className={`status-bar ${backendStatus}`}>
-          {backendStatus === 'checking' && '🔄 Connecting to backend...'}
+        <div className={`status-bar ${backendStatus}`} role="status">
+          <span className="status-dot" aria-hidden="true"></span>
+          {backendStatus === 'checking' && <span>Connecting to backend…</span>}
           {backendStatus === 'disconnected' && (
-            <>⚠️ Backend not reachable — run <code>python app.py</code> in the backend folder</>
+            <span>Backend not reachable — run <code>python app.py</code> in the backend folder</span>
           )}
         </div>
       )}
@@ -280,7 +333,8 @@ function App() {
         {/* Welcome screen */}
         {messages.length === 0 && (
           <div className="welcome">
-            <div className="welcome-icon">🧠</div>
+            <span className="welcome-eyebrow">AI-Powered NLP &amp; ML Tutor</span>
+            <div className="welcome-icon" aria-hidden="true">🧠</div>
             <h1>Nudge your understanding forward.</h1>
             <p>
               Pick any NLP or ML concept — RNNs, Transformers, LLMs, tokenization, embeddings,
@@ -299,7 +353,7 @@ function App() {
 
         {/* Messages */}
         {messages.map((msg, i) => (
-          <ChatMessage key={i} message={msg} index={i} />
+          <ChatMessage key={i} message={msg} index={i} avatar={avatar} />
         ))}
         {isLoading && <LoadingIndicator />}
         <div ref={chatEndRef} />
