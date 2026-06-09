@@ -35,24 +35,47 @@ NudgeBot is an AI tutor that nudges learners toward deeper understanding of NLP,
 3. Paste it in `backend/.env`
 
 ### Step 2: Backend Setup
-Open a terminal in VS Code:
+Open a terminal in VS Code and create an isolated **virtual environment** so NudgeBot's
+dependencies stay separate from your other Python projects:
+
+**Windows (PowerShell):**
+```powershell
+cd backend
+python -m venv venv
+.\venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+**macOS / Linux:**
 ```bash
 cd backend
-pip install -r requirements.txt
+python3 -m venv venv
+./venv/bin/python -m pip install -r requirements.txt
 ```
-Edit `.env` and add your Groq API key:
+
+> ⏳ The first install downloads PyTorch + Transformers (a few hundred MB) — give it a few minutes.
+
+Add your Groq API key to `backend/.env`:
 ```
 GROQ_API_KEY=gsk_your_actual_key_here
 ```
-Start the server:
-```bash
-python app.py
+
+Start the server with the venv's Python (no activation needed):
+```powershell
+# Windows (PowerShell)
+.\venv\Scripts\python.exe app.py
 ```
+```bash
+# macOS / Linux
+./venv/bin/python app.py
+```
+
 You should see:
 ```
-✅ Pipeline ready — 32 concepts loaded.
+✅ Pipeline ready — 112 concepts loaded.
  * Running on http://127.0.0.1:5000
 ```
+
+> 💡 **Tip:** Running the venv's Python directly (`.\venv\Scripts\python.exe`) avoids PowerShell activation and execution-policy prompts. To activate the venv instead, run `.\venv\Scripts\Activate.ps1` (Windows) or `source venv/bin/activate` (macOS/Linux), then just use `python app.py`. The `venv/` folder is git-ignored, so it's never committed.
 
 ### Step 3: Frontend Setup
 Open a **second** terminal in VS Code:
@@ -70,6 +93,7 @@ nudgebot-project/
 ├── backend/
 │   ├── app.py              # Flask API + NLP pipeline + Groq LLM
 │   ├── requirements.txt    # Python dependencies
+│   ├── venv/               # Virtual environment (git-ignored, created in Step 2)
 │   └── .env                # GROQ_API_KEY goes here
 ├── frontend/
 │   ├── package.json        # React dependencies (proxies to :5000)
@@ -77,7 +101,7 @@ nudgebot-project/
 │   │   └── index.html
 │   └── src/
 │       ├── App.js          # Main React app with API integration
-│       ├── App.css          # Dark editorial theme
+│       ├── App.css          # "Luminous Lab" theme (aurora + glassmorphism)
 │       └── index.js         # React entry point
 └── README.md
 ```
@@ -86,7 +110,7 @@ nudgebot-project/
 
 | Feature | Technique | Purpose |
 |---|---|---|
-| Intent Detection | TF-IDF + Sentence-BERT fallback | Maps questions → 32 RNN concepts |
+| Intent Detection | TF-IDF + Sentence-BERT fallback | Maps questions → 112 NLP/ML concepts |
 | Text Similarity | Cosine similarity on SBERT embeddings | CORRECT/INCORRECT classification |
 | Sentiment Analysis | VADER compound score | Detects confident/uncertain/neutral tone |
 | LLM Response | Groq (Llama 3.3 70B) | Generates contrarian teaching responses |
@@ -98,7 +122,7 @@ nudgebot-project/
 | GET | `/api/health` | Backend status check |
 | POST | `/api/ask` | Send question + understanding, get AI response |
 | POST | `/api/reset` | Clear conversation history for a session |
-| GET | `/api/concepts` | List all 32 RNN concepts |
+| GET | `/api/concepts` | List all 112 NLP/ML concepts |
 
 ### Example Request
 ```bash
@@ -107,12 +131,12 @@ curl -X POST http://localhost:5000/api/ask \
   -d '{"question": "What is LSTM?", "understanding": "LSTM uses gates to control memory", "session_id": "test1"}'
 ```
 
-## 🎓 Covered Concepts (32 total)
+## 🎓 Covered Concepts (112 total)
 RNN Basics · Hidden State · LSTM · GRU · Cell State · Gates (Forget/Input/Output/Reset/Update) · BPTT · Vanishing/Exploding Gradients · Gradient Clipping · Seq2Seq · Attention (Bahdanau/Luong) · Teacher Forcing · Bidirectional RNN · Deep RNN · Embeddings · Perplexity · Dropout · RNN vs Transformer · and more.
 
 ## 🛠️ Troubleshooting
 
-**Backend won't start?** Make sure you have Python 3.9+ and run `pip install -r requirements.txt`.
+**Backend won't start?** Make sure you created and installed the venv (Step 2). A `ModuleNotFoundError` (e.g. `No module named 'flask_cors'`) means dependencies are missing — re-run the install with the venv's Python from the `backend` folder: `.\venv\Scripts\python.exe -m pip install -r requirements.txt` (Windows) or `./venv/bin/python -m pip install -r requirements.txt` (macOS/Linux).
 
 **"GROQ_API_KEY not configured"?** Edit `backend/.env` with your real key from https://console.groq.com/keys.
 

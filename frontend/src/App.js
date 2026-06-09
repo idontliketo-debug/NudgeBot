@@ -206,12 +206,22 @@ function InputForm({ onSubmit, isLoading }) {
           )}
         </button>
       </form>
+      <p className="input-hint">
+        NudgeBot pushes back to sharpen your thinking — double-check anything critical.
+      </p>
     </div>
   );
 }
 
 // ── SUGGESTED TOPICS ──────────────────────────────────────────────────────────
 function SuggestedTopics({ onSelect }) {
+  // Per-card accent hues (rgb triplets) — drive each card's glow + arrow via the
+  // --topic-rgb custom property, cycling so adjacent cards never share a color.
+  const HUES = [
+    '255, 206, 77', '167, 139, 250', '94, 234, 212', '129, 212, 250',
+    '244, 114, 182', '163, 230, 53', '251, 146, 60', '96, 165, 250',
+    '52, 211, 153', '232, 121, 249', '250, 204, 21', '125, 211, 252',
+  ];
   const topics = [
     { question: "What is an LSTM?", understanding: "LSTM uses gates to control memory flow" },
     { question: "Explain vanishing gradient", understanding: "Gradients become very small during backpropagation" },
@@ -234,7 +244,7 @@ function SuggestedTopics({ onSelect }) {
           key={i}
           className="topic-card"
           onClick={() => onSelect(topic.question, topic.understanding)}
-          style={{ animationDelay: `${i * 0.08}s` }}
+          style={{ '--topic-rgb': HUES[i % HUES.length], animationDelay: `${i * 0.08}s` }}
         >
           <span className="topic-q-row">
             <span className="topic-q">{topic.question}</span>
@@ -334,8 +344,12 @@ function App() {
         {messages.length === 0 && (
           <div className="welcome">
             <span className="welcome-eyebrow">AI-Powered NLP &amp; ML Tutor</span>
-            <div className="welcome-icon" aria-hidden="true">🧠</div>
-            <h1>Nudge your understanding forward.</h1>
+            <div className="welcome-orb" aria-hidden="true">
+              <span className="orb-ring"></span>
+              <span className="orb-ring orb-ring-2"></span>
+              <div className="welcome-icon">🧠</div>
+            </div>
+            <h1>Nudge your <em className="hero-em">understanding</em> forward.</h1>
             <p>
               Pick any NLP or ML concept — RNNs, Transformers, LLMs, tokenization, embeddings,
               retrieval, alignment — share what you think you know, and I'll push back to sharpen it.

@@ -5,7 +5,20 @@ Bot that helps in leading towards a better Understanding.
 """
 
 import os
+import sys
 import numpy as np
+
+# ── Windows console safety ──────────────────────────────────────────────────
+# The startup logs below use emoji (🔄 ✅ ⚠️). On Windows, stdout defaults to the
+# cp1252 code page when piped or redirected, which raises UnicodeEncodeError on
+# those characters and crashes the server before it starts. Reconfiguring to
+# UTF-8 (with replacement) makes logging robust everywhere. This affects only
+# how console output is encoded — no application behavior changes.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except (AttributeError, ValueError):
+    pass
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sentence_transformers import SentenceTransformer, util
